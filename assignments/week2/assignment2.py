@@ -51,9 +51,9 @@ while True:
         print ("Have fun! The music is great and the dancers are amazing!")
         print ("🪩🕺🏼💃🏼")
         time.sleep(4)
+    else:
+            print("Sorry, I don't understand. Please try again.")
 
  # I decided to not print that⤵️, because I want it to be a loop. (never ending story)
- #   else:
- #           print("Sorry, I don't understand. Please try again.")
  #   print("Done! Thanks for playing!")
  #   time.sleep(3)
