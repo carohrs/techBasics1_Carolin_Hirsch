@@ -2,7 +2,7 @@
 
 import time
 
-#Schleife damit es sich wiederholt
+#loop so that it repeats itself
 while True:
     print("NEW GUEST ARRIVES🤗")
     time.sleep(2)
