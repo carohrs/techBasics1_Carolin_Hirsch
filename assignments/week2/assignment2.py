@@ -16,7 +16,6 @@ while True:
 #boss check
     if name.lower() == "boss":
         print("You're the boss! Go wherever you want!")
-        print("Done! Thanks for playing!")
         time.sleep(2)
         continue
     print(f"Checking the guest list for {name}...")
