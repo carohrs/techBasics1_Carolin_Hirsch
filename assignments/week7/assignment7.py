@@ -4,7 +4,7 @@ import time
 import csv
 import random
 
-DEBUG = False
+DEBUG = True
 
 if not os.path.exists("record.csv"): #help through included AI because I don't want the headings to be written everytime
     with open("record.csv", "a") as record: #opening file
