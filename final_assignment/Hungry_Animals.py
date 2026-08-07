@@ -17,6 +17,9 @@ screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 pygame.display.set_caption("Hungry Animals: Snack Drop")
 clock = pygame.time.Clock()
 
+#fonts (for score..)
+font = pygame.font.SysFont(None, 48)
+
 #Classes
 class Animal:
     def __init__(self, animal_name, favorite_food, start_x, start_y):
@@ -72,6 +75,10 @@ food_list = []
 spawn_timer = 0
 spawn_delay = 60 #maybe later random
 
+#score and lives
+score = 0
+lives = 3
+
 #Game loop control
 running = True
 
@@ -102,14 +109,40 @@ while running:
     for food in food_list:
             food.fall()
 
-    # remove food that has fallen off the screen (missed)
+    # check collision between player and food
+    food_to_remove = []  # list to store food to remove
+
+    for food in food_list:
+        if player.rect.colliderect(food.rect):
+            if food.name == player.favorite_food:
+                score += 1
+            else:
+                score -= 1
+                lives -= 1
+            food_to_remove.append(food)  # add food to remove list
+    #remove food that was caught
+    for food in food_to_remove:
+        food_list.remove(food)
+
+    #remove food that has fallen off the screen (missed)
     food_list = [food for food in food_list if food.y < SCREEN_HEIGHT]
+
+    #check game over  (!!! Have to create GAME OVER STATE !!!
+    if lives <= 0:
+        running = False
 
     #Drawing
     screen.fill(BGCOLOR)
     player.draw(screen)
     for food in food_list:
         food.draw(screen)
+
+    # draw score and lives text
+    score_text = font.render("Score: " + str(score), True, (0, 0, 0))
+    lives_text = font.render("Lives: " + str(lives), True, (0, 0, 0))
+    screen.blit(score_text, (20, 20))
+    screen.blit(lives_text, (20, 70))
+
     pygame.display.flip()
 
     #Limit framerate
