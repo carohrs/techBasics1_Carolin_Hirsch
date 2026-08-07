@@ -43,16 +43,41 @@ class Animal:
     def draw(self, surface):
         pygame.draw.rect(surface, (255, 165, 0), self.rect)  # orange rectangle as placeholder
 
+class Food:
+    def __init__(self, food_name, start_x):
+        self.name = food_name
+        self.x = start_x
+        self.y = 0  #start at the top of the screen
+        self.speed = 4
+        self.rect = pygame.Rect(self.x, self.y, 40, 40)
 
-#Create the player animal (Monkey for demonstration)
+    def fall(self):
+        self.y += self.speed
+        self.rect.y = self.y
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, (0, 200, 0), self.rect)  #green square as placeholder
+
+
+#Create animal (Monkey for demonstration)
 player = Animal("Monkey", "Banana", SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
+
+#list of possible food typed
+FOOD_TYPES = ["Banana", "Fish", "Bone", "Carrot", "Fly"]
+
+#list to store falling food
+food_list = []
+
+#timer for spawning the food
+spawn_timer = 0
+spawn_delay = 60 #maybe later random
 
 #Game loop control
 running = True
 
 while running:
 
-    #Event handling later
+    #keyboard action
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -64,9 +89,27 @@ while running:
     if keys[pygame.K_RIGHT]:
         player.move_right()
 
+    #spawn new food
+    spawn_timer += 1
+    if spawn_timer >= spawn_delay:
+        spawn_timer = 0
+        random_food_name = random.choice(FOOD_TYPES)
+        random_x = random.randint(0, SCREEN_WIDTH - 40)
+        new_food = Food(random_food_name, random_x)
+        food_list.append(new_food)
+
+    # update all food items (make them fall)
+    for food in food_list:
+            food.fall()
+
+    # remove food that has fallen off the screen (missed)
+    food_list = [food for food in food_list if food.y < SCREEN_HEIGHT]
+
     #Drawing
     screen.fill(BGCOLOR)
     player.draw(screen)
+    for food in food_list:
+        food.draw(screen)
     pygame.display.flip()
 
     #Limit framerate
