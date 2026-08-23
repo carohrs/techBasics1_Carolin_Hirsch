@@ -152,12 +152,9 @@ def reset_game(chosen_animal):
     game_state = PLAYING
 
 
-#Game loop control
-running = True
-
-while running:
-
-    # keyboard action
+def handle_events():
+    global game_state, food_list
+     # keyboard action
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -174,124 +171,171 @@ while running:
                     reset_game(animal_options[2])  # Frog
                 if event.key == pygame.K_4:
                     reset_game(animal_options[3])  # Cat
+                if event.key == pygame.K_5:
+                    reset_game(animal_options[4])  # Bunny
 
             # if game is over, press R to restart or Q to quit
             if game_state == GAME_OVER:
-                if event.key == pygame.K_r:
-                    game_state = START_SCREEN
-                    food_list = []
+                    if event.key == pygame.K_r:
+                        game_state = START_SCREEN
+                        food_list = []
                     if event.key == pygame.K_q:
                         running = False
 
-    # update when playing
-    if game_state == PLAYING:
+    return True
 
-        # key input for movement
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            player.move_left()
-        if keys[pygame.K_RIGHT]:
-            player.move_right()
 
-        # increase fall speed (difficulty) based on score
-        current_fall_speed = base_fall_speed + (score // 5) # every 5 points, the food falls one pixel per frame faste
+# key input for movement
+def move_player():
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        player.move_left()
+    if keys[pygame.K_RIGHT]:
+        player.move_right()
 
-        #spawn new food
-        spawn_timer += 1
-        if spawn_timer >= spawn_delay:
-            spawn_timer = 0
-            random_food_name = random.choice(FOOD_TYPES)
-            random_x = random.randint(0, SCREEN_WIDTH - 40)
-            new_food = Food(random_food_name, random_x, current_fall_speed)
-            food_list.append(new_food)
+#spawn new food
+def spawn_food():
+    global spawn_timer
+    spawn_timer += 1
+    if spawn_timer >= spawn_delay:
+        spawn_timer = 0
+        random_food_name = random.choice(FOOD_TYPES)
+        random_x = random.randint(0, SCREEN_WIDTH - 40)
+        new_food = Food(random_food_name, random_x, current_fall_speed)
+        food_list.append(new_food)
 
-        #make it fall
-        for food in food_list:
-                food.fall()
+#make it fall and remove when it falls out of the screen
+def move_food():
+    global food_list
 
-        # check collision between player and food
-        food_to_remove = []  # list to store food to remove
+    for food in food_list:
+            food.fall()
+    #remove food that has fallen off the screen (missed)
+    food_list = [food for food in food_list if food.y < SCREEN_HEIGHT]
 
-        for food in food_list:
-            if player.rect.colliderect(food.rect):
-                if food.name == player.favorite_food:
-                    score += 1
-                else:
-                    score -= 1
-                    lives -= 1
-                food_to_remove.append(food)  # add food to remove list
-        #remove food that was caught
-        for food in food_to_remove:
-            food_list.remove(food)
 
-        #remove food that has fallen off the screen (missed)
-        food_list = [food for food in food_list if food.y < SCREEN_HEIGHT]
+# check collision between player and food
+def check_collision():
+    global score, lives
 
-        #check game over
-        if lives <= 0:
-            game_state = GAME_OVER
+    food_to_remove = []  # list to store food to remove
 
-    #Drawing
+    for food in food_list:
+        if player.rect.colliderect(food.rect):
+            if food.name == player.favorite_food:
+                score += 1
+            else:
+                score -= 1
+                lives -= 1
+            food_to_remove.append(food)  # add food to remove list
+    #remove food that was caught
+    for food in food_to_remove:
+        food_list.remove(food)
+
+#update when playing
+def update_game():
+    global current_fall_speed, game_state
+
+    move_player()
+
+    #increase fall speed (difficulty) based on score
+    current_fall_speed = base_fall_speed + (score // 5) #every 5 points, increase fall speed
+
+    spawn_food()
+    move_food()
+    check_collision()
+
+    #check game over
+    if lives <= 0:
+        game_state = GAME_OVER
+
+
+#START SCREEN
+def draw_start_screen():
+    #title
+    title_text = font_big.render("Hungry Animals: Snack Drop", True, ORANGE)
+    subtitle_text = font_small.render("Press 1-4 to choose your animal", True, BLACK)
+    screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
+    screen.blit(subtitle_text, (SCREEN_WIDTH // 2 - subtitle_text.get_width() // 2, 200))
+
+    #show all 4 animals
+    for i, animal in enumerate(animal_options):
+        x_pos = 60 + i * 230
+        y_pos= 260
+
+        #draw animal
+        pygame.draw.rect(screen, animal["color"], (x_pos, y_pos, 80, 80))
+        #draw animal name below
+        name_text = font.render(animal["name"], True, BLACK)
+        screen.blit(name_text, (x_pos, y_pos + 90))
+        #draw favorite food
+        food_text = font_small.render("Loves : " + animal["food"], True, BLACK)
+        screen.blit(food_text, (x_pos, y_pos + 140))
+
+        #draw key to press
+        key_text = font.render("Press " + str(i + 1), True, RED)
+        screen.blit(key_text, (x_pos, y_pos + 190))
+
+#game state PLAYING
+def draw_playing():
+    #draw player & food
+    player.draw(screen)
+    for food in food_list:
+        food.draw(screen)
+
+    # draw score and lives text
+    score_text = font.render("Score: " + str(score), True, BLACK)
+    lives_text = font.render("Lives: " + str(lives), True, BLACK)
+    animal_text = font.render("Animal: " + player.name, True, BLACK)
+    food_hint = font_small.render("Catch: " + player.favorite_food, True, BLACK)
+    screen.blit(score_text, (20, 20))
+    screen.blit(lives_text, (20, 70))
+    screen.blit(animal_text, (20, 120))
+    screen.blit (food_hint, (20, 170))
+
+def draw_game_over():
+    gameover_text = font_big.render("GAME OVER", True, (200, 0, 0))
+    final_score_text = font.render("Final Score: " + str(score), True, BLACK)
+    restart_text = font.render("Press R to restart or Q to quit", True, BLACK)
+    quit_text = font.render ("Press Q to quit", True, BLACK)
+    # center the text
+    screen.blit(gameover_text, (SCREEN_WIDTH // 2 - gameover_text.get_width() // 2, 250))
+    screen.blit(final_score_text, (SCREEN_WIDTH // 2 - final_score_text.get_width() // 2, 380))
+    screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, 450))
+    screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, 510))
+
+#Drawing
+def draw_everything():
     screen.fill(BGCOLOR)
 
-    #START SCREEN
     if game_state == START_SCREEN:
-        #title
-        title_text = font_big.render("Hungry Animals: Snack Drop", True, ORANGE)
-        subtitle_text = font_small.render("Press 1-4 to choose your animal", True, BLACK)
-        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
-        screen.blit(subtitle_text, (SCREEN_WIDTH // 2 - subtitle_text.get_width() // 2, 200))
+        draw_start_screen()
 
-        #show all 4 animals
-        for i, animal in enumerate(animal_options):
-            x_pos = 60 + i * 230
-            y_pos= 260
-
-            #draw animal
-            pygame.draw.rect(screen, animal["color"], (x_pos, y_pos, 80, 80))
-            #draw animal name below
-            name_text = font.render(animal["name"], True, BLACK)
-            screen.blit(name_text, (x_pos, y_pos + 90))
-            #draw favorite food
-            food_text = font_small.render("Loves : " + animal["food"], True, BLACK)
-            screen.blit(food_text, (x_pos, y_pos + 140))
-
-            #draw key to press
-            key_text = font.render("Press " + str(i + 1), True, RED)
-            screen.blit(key_text, (x_pos, y_pos + 190))
-
-    #game state PLAYING
     if game_state == PLAYING:
-        #draw player & food
-        player.draw(screen)
-        for food in food_list:
-            food.draw(screen)
-
-        # draw score and lives text
-        score_text = font.render("Score: " + str(score), True, BLACK)
-        lives_text = font.render("Lives: " + str(lives), True, BLACK)
-        animal_text = font.render("Animal: " + player.name, True, BLACK)
-        food_hint = font_small.render("Catch: " + player.favorite_food, True, BLACK)
-        screen.blit(score_text, (20, 20))
-        screen.blit(lives_text, (20, 70))
-        screen.blit(animal_text, (20, 120))
-        screen.blit (food_hint, (20, 170))
+        draw_playing()
 
     if game_state == GAME_OVER:
-        #draw game over screen
-        gameover_text = font_big.render("GAME OVER", True, (200, 0, 0))
-        final_score_text = font.render("Final Score: " + str(score), True, BLACK)
-        restart_text = font.render("Press R to restart or Q to quit", True, BLACK)
-        quit_text = font.render ("Press Q to quit", True, BLACK)
-        # center the text
-        screen.blit(gameover_text, (SCREEN_WIDTH // 2 - gameover_text.get_width() // 2, 250))
-        screen.blit(score_text, (SCREEN_WIDTH // 2 - final_score_text.get_width() // 2, 380))
-        screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, 450))
-        screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, 510))
+        draw_game_over()
 
     pygame.display.flip()
 
-    #Limit framerate
-    clock.tick(FPS)
+#MAIN
 
-pygame.quit()
+def main():
+    #game loop control
+    running = True
+
+    while running:
+        running = handle_events()
+
+        if game_state == PLAYING:
+            update_game()
+
+        draw_everything()
+
+         #Limit framerate
+        clock.tick(FPS)
+
+    pygame.quit()
+
+main()
