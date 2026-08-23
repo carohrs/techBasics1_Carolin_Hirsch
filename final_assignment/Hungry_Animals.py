@@ -176,11 +176,11 @@ def handle_events():
 
             # if game is over, press R to restart or Q to quit
             if game_state == GAME_OVER:
-                    if event.key == pygame.K_r:
-                        game_state = START_SCREEN
-                        food_list = []
-                    if event.key == pygame.K_q:
-                        running = False
+                if event.key == pygame.K_r:
+                    game_state = START_SCREEN
+                    food_list = []
+                if event.key == pygame.K_q:
+                    return = False
 
     return True
 
