@@ -27,11 +27,44 @@ font_small = pygame.font.SysFont(None, 35)
 #colors
 WHITE = (255,255,255)
 BLACK = (0,0,0)
-RED = (255,0,0)
+RED = (128,0,32)
 ORANGE = (255,165,0)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
 YELLOW = (255,255,0)
+ROSA = (231, 84, 128)
+
+import os
+
+IMAGE_FOLDER ="images"
+
+#load image and scale to the size
+def load_image(file_name, width, height):
+    path =os.path.join(IMAGE_FOLDER, file_name)
+    image = pygame.image.load(path).convert_alpha()
+    image = pygame.transform.scale(image, (width, height))
+    return image
+
+#background
+background_image = load_image("Background.png", SCREEN_WIDTH, SCREEN_HEIGHT)
+
+#animal images
+ANIMAL_IMAGES = {
+    "Monkey": load_image("Monkey.png", 80, 80),
+    "Dog": load_image("Dog.png", 80, 80),
+    "Frog": load_image("Frog.png", 80, 80),
+    "Cat": load_image("Cat.png", 80, 80),
+    "Bunny": load_image("Bunny.png", 80, 80)
+}
+
+#food images
+FOOD_IMAGES = {
+    "Banana": load_image("Banana.png", 50, 50),
+    "Fish": load_image("Fish.png", 50, 50),
+    "Bone": load_image("Bone.png", 50, 50),
+    "Carrot": load_image("carrot.png", 50, 50),
+    "Fly": load_image("Fly.png", 50, 50)
+}
 
 #Classes
 class Animal:
@@ -43,7 +76,8 @@ class Animal:
         self.y = start_y
         self.speed = 8
         self.color = animal_color
-        self.rect = pygame.Rect(self.x, self.y, 60, 60)  # Pygame Rect as hitbox
+        self.image = ANIMAL_IMAGES[animal_name]
+        self.rect = pygame.Rect(self.x, self.y, 80, 80)  # Pygame Rect as hitbox
 
     def move_left(self):
         self.x -= self.speed
@@ -58,10 +92,7 @@ class Animal:
         self.rect.x = self.x
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
-        # draw animal name below
-        name_text = font_small.render(self.name, True, BLACK)
-        surface.blit(name_text, (self.rect.x, self.rect.y + 65))
+        surface.blit(self.image, (self.x, self.y))
 
 #food
 class Food:
@@ -70,31 +101,15 @@ class Food:
         self.x = start_x
         self.y = 0  #start at the top of the screen
         self.speed = fall_speed
+        self.image = FOOD_IMAGES[food_name]
         self.rect = pygame.Rect(self.x, self.y, 40, 40)
-
-# each food type gets its own color so you can tell them apart
-        if self.name == "Banana":
-            self.color = (255, 255, 0)  # yellow
-        elif self.name == "Fish":
-            self.color = (0, 150, 255)  # blue
-        elif self.name == "Bone":
-            self.color = (180, 50, 50)  # dark red
-        elif self.name == "Fly":
-            self.color = (50, 50, 50)  # dark grey
-        elif self.name == "Carrot":
-            self.color = (255, 150, 0)
-        else:
-            self.color = GREEN
 
     def fall(self):
         self.y += self.speed
         self.rect.y = self.y
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
-        # draw food name below
-        food_text = font_small.render(self.name, True, BLACK)
-        surface.blit(food_text, (self.rect.x, self.rect.y + 42))
+        surface.blit(self.image, (self.x, self.y))
 
 #ANIMAL OPTIONS for the start screen (name, favorite food, color)
 animal_options = [
@@ -180,7 +195,7 @@ def handle_events():
                     game_state = START_SCREEN
                     food_list = []
                 if event.key == pygame.K_q:
-                    return = False
+                    return  False
 
     return True
 
@@ -200,7 +215,7 @@ def spawn_food():
     if spawn_timer >= spawn_delay:
         spawn_timer = 0
         random_food_name = random.choice(FOOD_TYPES)
-        random_x = random.randint(0, SCREEN_WIDTH - 40)
+        random_x = random.randint(0, SCREEN_WIDTH - 50)
         new_food = Food(random_food_name, random_x, current_fall_speed)
         food_list.append(new_food)
 
@@ -253,7 +268,7 @@ def update_game():
 #START SCREEN
 def draw_start_screen():
     #title
-    title_text = font_big.render("Hungry Animals: Snack Drop", True, ORANGE)
+    title_text = font_big.render("Hungry Animals: Snack Drop", True, ROSA)
     subtitle_text = font_small.render("Press 1-4 to choose your animal", True, BLACK)
     screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 100))
     screen.blit(subtitle_text, (SCREEN_WIDTH // 2 - subtitle_text.get_width() // 2, 200))
@@ -264,7 +279,7 @@ def draw_start_screen():
         y_pos= 260
 
         #draw animal
-        pygame.draw.rect(screen, animal["color"], (x_pos, y_pos, 80, 80))
+        screen.blit(ANIMAL_IMAGES[animal["name"]], (x_pos, y_pos))
         #draw animal name below
         name_text = font.render(animal["name"], True, BLACK)
         screen.blit(name_text, (x_pos, y_pos + 90))
@@ -306,7 +321,7 @@ def draw_game_over():
 
 #Drawing
 def draw_everything():
-    screen.fill(BGCOLOR)
+    screen.blit(background_image, (0, 0))
 
     if game_state == START_SCREEN:
         draw_start_screen()
