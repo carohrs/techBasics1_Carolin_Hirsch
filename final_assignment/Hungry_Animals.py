@@ -135,6 +135,7 @@ spawn_delay = 60 #maybe later random
 #score and lives
 score = 0
 lives = 3
+highscore = 0
 
 #level (difficulty)
 base_fall_speed = 4
@@ -165,6 +166,22 @@ def reset_game(chosen_animal):
         chosen_animal["color"]
     )
     game_state = PLAYING
+
+#read the highscor from the file
+def load_highscore():
+    if os.path.exists("highscore.txt"):
+        with open("highscore.txt", "r") as file:
+            return int(file.read())
+    else:
+        return 0
+
+#save the score if it is a new highscore
+def save_highscore(new_score):
+    global highscore
+    if new_score > highscore:
+        highscore = new_score
+        with open("highscore.txt", "w") as file:
+            file.write(str(highscore))
 
 
 def handle_events():
@@ -214,19 +231,34 @@ def spawn_food():
     spawn_timer += 1
     if spawn_timer >= spawn_delay:
         spawn_timer = 0
-        random_food_name = random.choice(FOOD_TYPES)
+
+        #40% chance for the favorite food, otherwise random
+        if random.randint(1, 10) <= 4:
+            random_food_name = player.favorite_food
+        else:
+            random_food_name = random.choice(FOOD_TYPES)
+
         random_x = random.randint(0, SCREEN_WIDTH - 50)
         new_food = Food(random_food_name, random_x, current_fall_speed)
         food_list.append(new_food)
 
 #make it fall and remove when it falls out of the screen
 def move_food():
-    global food_list
+    global food_list, score
 
     for food in food_list:
             food.fall()
     #remove food that has fallen off the screen (missed)
-    food_list = [food for food in food_list if food.y < SCREEN_HEIGHT]
+    food_still_falling = []
+    for food in food_list:
+        if food.rect.y < SCREEN_HEIGHT:
+            food_still_falling.append(food)
+        else:
+            #missing favorite food = - lives
+            if food.name == player.favorite_food:
+                score -= 1
+
+    food_list = food_still_falling
 
 
 # check collision between player and food
@@ -249,7 +281,7 @@ def check_collision():
 
 #update when playing
 def update_game():
-    global current_fall_speed, game_state
+    global current_fall_speed, game_state, score, lives
 
     move_player()
 
@@ -260,8 +292,13 @@ def update_game():
     move_food()
     check_collision()
 
+    #if score below zero you lose a life
+    if score < 0:
+        lives -= 1
+        score = 0
     #check game over
     if lives <= 0:
+        save_highscore(score)
         game_state = GAME_OVER
 
 
@@ -311,11 +348,13 @@ def draw_playing():
 def draw_game_over():
     gameover_text = font_big.render("GAME OVER", True, (200, 0, 0))
     final_score_text = font.render("Final Score: " + str(score), True, BLACK)
+    highscore_text = font.render("Highscore: " + str(highscore), True, BLACK)
     restart_text = font.render("Press R to restart or Q to quit", True, BLACK)
     quit_text = font.render ("Press Q to quit", True, BLACK)
     # center the text
     screen.blit(gameover_text, (SCREEN_WIDTH // 2 - gameover_text.get_width() // 2, 250))
     screen.blit(final_score_text, (SCREEN_WIDTH // 2 - final_score_text.get_width() // 2, 380))
+    screen.blit(highscore_text, (SCREEN_WIDTH // 2 - highscore_text.get_width() // 2, 320))
     screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, 450))
     screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, 510))
 
@@ -337,6 +376,11 @@ def draw_everything():
 #MAIN
 
 def main():
+    global highscore
+
+    #load the highscore from the file
+    highscore = load_highscore()
+
     #game loop control
     running = True
 
